@@ -37,31 +37,28 @@ fn main() -> anyhow::Result<()> {
             let so = std::io::stdout();
             let so = so.lock();
             let mut so = std::io::BufWriter::with_capacity(8192, so);
-            writeln!(so, "{}", r#"{"version":"sledtool0", "data": ["#)?;
-            for (a, b, c) in db.export() {
-                writeln!(
-                    so,
-                    " {{\"a\":\"{}\",  \"b\":\"{}\", \"content\":[",
-                    hex::encode(a),
-                    hex::encode(b)
-                )?;
-                for (j, q) in c.enumerate() {
-                    if j > 0 {
-                        write!(so, "  ,[")?;
-                    } else {
-                        write!(so, "   [")?;
-                    }
-                    for (i, w) in q.iter().enumerate() {
-                        if i > 0 {
-                            write!(so, ",")?;
-                        }
-                        write!(so, "\"{}\"", hex::encode(w))?;
-                    }
-                    writeln!(so, "]")?;
+
+            writeln!(so, "{{")?;
+            for (tn, tree_name) in db.tree_names().into_iter().enumerate() {
+                if tn > 0 {
+                    write!(so, ",")?;
+                } else {
+                    write!(so, " ")?;
                 }
-                writeln!(so, " ]}}")?;
+                writeln!(so, r#""{}":{{"#, hex::encode(&tree_name))?;
+                let tree = db.open_tree(&tree_name)?;
+                for (vn,x) in tree.into_iter().enumerate() {
+                    if vn > 0 {
+                        write!(so, " ,")?;
+                    } else {
+                        write!(so, "  ")?;
+                    }
+                    let (k, v) = x?;
+                    writeln!(so, r#""{}": "{}""#, hex::encode(k), hex::encode(v))?;
+                }
+                writeln!(so, " }}")?;
             }
-            writeln!(so, "{}", "]}")?;
+            writeln!(so, "}}")?;
         }
         Cmd::Import(Import {}) => {todo!()}
     }
