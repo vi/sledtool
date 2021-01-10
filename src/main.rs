@@ -90,6 +90,11 @@ struct Set {
     quiet: bool,
 }
 
+/// Open Sled database, then wait indefinitely
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "idle")]
+struct Idle {}
+
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
 enum Cmd {
@@ -97,6 +102,7 @@ enum Cmd {
     Import(Import),
     Get(Get),
     Set(Set),
+    Idle(Idle),
 }
 
 pub mod sledimporter;
@@ -257,6 +263,9 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
+        Cmd::Idle(Idle {}) => loop {
+            std::thread::sleep(std::time::Duration::from_secs(3600));
+        },
     }
 
     Ok(())
