@@ -4,7 +4,7 @@ use serde::de::Error as DeError;
 use serde::de::Unexpected;
 use serde::de::{DeserializeSeed, Visitor};
 
-const MAX_BATCH_SIZE: usize = 4096;
+const MAX_BATCH_SIZE: usize = 128;
 
 pub struct DbDeserializer<'a>(pub &'a Db);
 pub struct TreeDeserializer<'a>(pub &'a Tree);
@@ -85,6 +85,7 @@ impl<'de, 'a> Visitor<'de> for TreeDeserializer<'a> {
 
             if counter >= MAX_BATCH_SIZE {
                 self.0.apply_batch(batch).map_err(DeError::custom)?;
+                //self.0.flush().map_err(DeError::custom)?;
                 counter = 0;
                 batch = Batch::default();
             }
