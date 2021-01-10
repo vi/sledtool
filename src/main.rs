@@ -27,6 +27,8 @@ enum Cmd {
     Import(Import),
 }
 
+pub mod sledimporter;
+
 fn main() -> anyhow::Result<()> {
     let opts: Opts = argh::from_env();
 
@@ -60,7 +62,13 @@ fn main() -> anyhow::Result<()> {
             }
             writeln!(so, "}}")?;
         }
-        Cmd::Import(Import {}) => {todo!()}
+        Cmd::Import(Import {}) => {
+            let si = std::io::stdin();
+            let si = si.lock();
+            let si = std::io::BufReader::with_capacity(8192, si);
+            use serde::de::DeserializeSeed;
+            let () = sledimporter::DbDeserializer(&db).deserialize(&mut serde_json::Deserializer::from_reader(si))?;
+        }
     }
 
     Ok(())
