@@ -1,5 +1,5 @@
 # sledtool
-CLI tool to work with Sled key-value databases.
+CLI tool to work with [Sled](https://github.com/spacejam/sled) key-value databases.
 
 ```
 $ sledtool --help
