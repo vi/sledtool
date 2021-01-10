@@ -59,6 +59,36 @@ struct Get {
     #[argh(switch, short = 'q')]
     quiet: bool,
 }
+/// Set value of specific key in the database
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "set")]
+struct Set {
+    #[argh(positional)]
+    key: String,
+
+    #[argh(positional)]
+    value: String,
+
+    /// tree to use
+    #[argh(option, short = 't')]
+    tree: Option<String>,
+
+    /// inhibit hex-decoding or hex-encoding the value
+    #[argh(switch, short = 'r')]
+    raw_value: bool,
+
+    /// inhibit hex-decoding the key
+    #[argh(switch, short = 'R')]
+    raw_key: bool,
+
+    /// inhibit hex-decoding the tree name
+    #[argh(switch, short = 'T')]
+    raw_tree_name: bool,
+
+    /// do not the old value
+    #[argh(switch, short = 'q')]
+    quiet: bool,
+}
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
@@ -66,6 +96,7 @@ enum Cmd {
     Export(Export),
     Import(Import),
     Get(Get),
+    Set(Set),
 }
 
 pub mod sledimporter;
@@ -126,7 +157,7 @@ fn main() -> anyhow::Result<()> {
                 anyhow::bail!("--gt and --lt options are specified simultaneously");
             }
             let mut t: &sled::Tree = &db;
-            let tree_buf ;
+            let tree_buf;
             if let Some(tree_name) = tree {
                 let tn = if raw_tree_name {
                     tree_name.as_bytes().to_vec()
@@ -143,11 +174,21 @@ fn main() -> anyhow::Result<()> {
                 hex::decode(key)?
             };
 
-            let v : Option<_>;
+            let v: Option<_>;
             match (lt, gt) {
                 (false, false) => v = t.get(&k)?,
-                (true, false) => v = t.get_lt(&k)?.map(|(ke,va)| { k = ke.to_vec(); va }),
-                (false, true) => v = t.get_gt(&k)?.map(|(ke,va)| { k = ke.to_vec(); va }),
+                (true, false) => {
+                    v = t.get_lt(&k)?.map(|(ke, va)| {
+                        k = ke.to_vec();
+                        va
+                    })
+                }
+                (false, true) => {
+                    v = t.get_gt(&k)?.map(|(ke, va)| {
+                        k = ke.to_vec();
+                        va
+                    })
+                }
                 (true, true) => unreachable!(),
             }
 
@@ -169,6 +210,51 @@ fn main() -> anyhow::Result<()> {
                     eprintln!("Not found");
                 }
                 std::process::exit(1);
+            }
+        }
+        Cmd::Set(Set {
+            key,
+            value,
+            tree,
+            raw_value,
+            raw_key,
+            raw_tree_name,
+            quiet,
+        }) => {
+            let mut t: &sled::Tree = &db;
+            let tree_buf;
+            if let Some(tree_name) = tree {
+                let tn = if raw_tree_name {
+                    tree_name.as_bytes().to_vec()
+                } else {
+                    hex::decode(tree_name)?
+                };
+                tree_buf = db.open_tree(tn)?;
+                t = &tree_buf;
+            }
+
+            let k = if raw_key {
+                key.as_bytes().to_vec()
+            } else {
+                hex::decode(key)?
+            };
+
+            let v = if raw_value {
+                value.as_bytes().to_vec()
+            } else {
+                hex::decode(value)?
+            };
+
+            let ov = t.insert(k, v)?;
+
+            if let Some(ov) = ov {
+                if !quiet {
+                    if raw_value {
+                        println!("{}", String::from_utf8_lossy(&ov));
+                    } else {
+                        println!("{}", hex::encode(ov));
+                    }
+                }
             }
         }
     }
