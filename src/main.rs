@@ -95,6 +95,38 @@ struct Set {
 #[argh(subcommand, name = "idle")]
 struct Idle {}
 
+/// List tree names
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "treenames")]
+struct TreeNames {
+    /// inhibit hex-decoding the tree names
+    #[argh(switch, short = 'T')]
+    raw_tree_names: bool,
+}
+/// Generate monotonic ID
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "genid")]
+struct GenerateId {
+}
+/// No operation, just open and close the database
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "nop")]
+struct Noop {
+}
+
+/// Call `checksum` and output the result
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "checksum")]
+struct Checksum {
+}
+
+/// Call `size_on_disk` and output the result
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "sizeondisk")]
+struct SizeOnDisk {
+}
+
+
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
 enum Cmd {
@@ -102,7 +134,12 @@ enum Cmd {
     Import(Import),
     Get(Get),
     Set(Set),
+    Noop(Noop),
     Idle(Idle),
+    TreeNames(TreeNames),
+    GenerateId(GenerateId),
+    Checksum(Checksum),
+    SizeOnDisk(SizeOnDisk),
 }
 
 pub mod sledimporter;
@@ -266,6 +303,25 @@ fn main() -> anyhow::Result<()> {
         Cmd::Idle(Idle {}) => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
         },
+        Cmd::Noop(Noop {}) => {}
+        Cmd::TreeNames(TreeNames { raw_tree_names }) => {
+            for tree_name in db.tree_names() {
+                if raw_tree_names {
+                    println!("{}", String::from_utf8_lossy(&tree_name));
+                } else {
+                    println!("{}", hex::encode(tree_name));
+                }
+            }
+        }
+        Cmd::GenerateId(GenerateId{}) => {
+            println!("{}", db.generate_id()?);
+        }
+        Cmd::Checksum(Checksum{}) => {
+            println!("{}", db.checksum()?);
+        }
+        Cmd::SizeOnDisk(SizeOnDisk{}) => {
+            println!("{}", db.size_on_disk()?);
+        }
     }
 
     Ok(())

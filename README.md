@@ -18,6 +18,12 @@ Commands:
                     hex-encoded buffers
   get               Get value of specific key from the database
   set               Set value of specific key in the database
+  nop               No operation, just open and close the database
+  idle              Open Sled database, then wait indefinitely
+  treenames         List tree names
+  genid             Generate monotonic ID
+  checksum          Call `checksum` and output the result
+  sizeondisk        Call `size_on_disk` and output the result
 ```
 
 ```
