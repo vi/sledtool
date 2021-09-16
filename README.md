@@ -2,13 +2,20 @@
 CLI tool to work with [Sled](https://github.com/spacejam/sled) key-value databases.
 
 ```
-$ sledtool --help
-
-Usage: sledtool <dbpath> <command> [<args>]
+Usage: sledtool <dbpath> [-c] [-C <compression-factor>] [-N] [-F] [-L] <command> [<args>]
 
 CLI tool to work with Sled databases
 
 Options:
+  -c, --compress    set `use_compression` in `sled::Config` to true
+  -C, --compression-factor
+                    set `compression_factor` in `sled::Config` to specified
+                    value
+  -N, --create-new  set `create_new` in `sled::Config` to true, making it a
+                    failure to open existing database
+  -F, --throughput-mode
+                    set `mode` in `sled::Config` to HighThroughput
+  -L, --low-space   set `mode` in `sled::Config` to LowSpace
   --help            display usage information
 
 Commands:

@@ -6,6 +6,26 @@ struct Opts {
     #[argh(positional)]
     dbpath: PathBuf,
 
+    /// set `use_compression` in `sled::Config` to true
+    #[argh(switch,short='c')]
+    compress: bool,
+
+    /// set `compression_factor` in `sled::Config` to specified value
+    #[argh(option,short='C')]
+    compression_factor: Option<i32>,
+
+    /// set `create_new` in `sled::Config` to true, making it a failure to open existing database
+    #[argh(switch,short='N')]
+    create_new: bool,
+
+    /// set `mode` in `sled::Config` to HighThroughput
+    #[argh(switch,short='F')]
+    throughput_mode: bool,
+
+    /// set `mode` in `sled::Config` to LowSpace
+    #[argh(switch,short='L')]
+    low_space: bool,
+
     #[argh(subcommand)]
     cmd: Cmd,
 }
@@ -147,7 +167,25 @@ pub mod sledimporter;
 fn main() -> anyhow::Result<()> {
     let opts: Opts = argh::from_env();
 
-    let db: sled::Db = sled::open(opts.dbpath)?;
+    let mut config = sled::Config::default().path(opts.dbpath);
+
+    if opts.compress {
+        config = config.use_compression(true);
+    }
+    if let Some(x) = opts.compression_factor {
+        config = config.compression_factor(x);
+    }
+    if opts.create_new {
+        config = config.create_new(true);
+    }
+    if opts.low_space {
+        config = config.mode(sled::Mode::LowSpace);
+    }
+    if opts.throughput_mode {
+        config = config.mode(sled::Mode::HighThroughput);
+    }
+
+    let db: sled::Db = config.open()?;
 
     match opts.cmd {
         Cmd::Export(Export {}) => {
