@@ -1,6 +1,8 @@
 # sledtool
 CLI tool to work with [Sled](https://github.com/spacejam/sled) key-value databases.
 
+It may be used for making migrations between Sled versions or different compression settings.
+
 ```
 Usage: sledtool <dbpath> [-c] [-C <compression-factor>] [-N] [-F] [-L] <command> [<args>]
 
