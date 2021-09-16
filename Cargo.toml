@@ -12,10 +12,14 @@ repository = "https://github.com/vi/sledtool"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["compression"]
+compression = ["sled/compression"]
+
 [dependencies]
 anyhow = "1.0.37"
 argh = "0.1.4"
 hex = "0.4.2"
 serde = "1.0.118"
 serde_json = "1.0.61"
-sled = {version="0.34.6",features=["compression"]}
+sled = {version="0.34.6",features=[]}
