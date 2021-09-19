@@ -40,7 +40,7 @@ struct Export {}
 #[argh(subcommand, name = "import")]
 struct Import {}
 
-/// Get value of specific key from the database
+/// Get value of specific key (or first/last) from the database
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "get")]
 struct Get {
@@ -78,6 +78,14 @@ struct Get {
     /// do not print `Not found` to console, just set exit code 1
     #[argh(switch, short = 'q')]
     quiet: bool,
+
+    /// ignore key, get first record instead
+    #[argh(switch, short = 'f')]
+    first: bool,
+
+    /// ignore key, get last record instead
+    #[argh(switch, short = 'l')]
+    last: bool,
 }
 /// Set value of specific key in the database
 #[derive(argh::FromArgs)]
@@ -145,7 +153,6 @@ struct Checksum {
 #[argh(subcommand, name = "sizeondisk")]
 struct SizeOnDisk {
 }
-
 
 #[derive(argh::FromArgs)]
 #[argh(subcommand)]
@@ -233,9 +240,21 @@ fn main() -> anyhow::Result<()> {
             lt,
             print_key,
             quiet,
+            first,
+            last,
         }) => {
             if lt && gt {
                 anyhow::bail!("--gt and --lt options are specified simultaneously");
+            }
+            if first && last {
+                if !quiet {
+                    eprintln!("Warning: with both --first and --last options active it would only succeed with exactly one record in the tree.");
+                }
+            }
+            if (first || last) && ! key.is_empty() {
+                if !quiet {
+                    eprintln!("Specifying non-empty (`\"\"`) key with --first or --last asserts it is indeed that key and fails otherwise.");
+                }
             }
             let mut t: &sled::Tree = &db;
             let tree_buf;
@@ -256,22 +275,74 @@ fn main() -> anyhow::Result<()> {
             };
 
             let v: Option<_>;
-            match (lt, gt) {
-                (false, false) => v = t.get(&k)?,
-                (true, false) => {
-                    v = t.get_lt(&k)?.map(|(ke, va)| {
-                        k = ke.to_vec();
-                        va
-                    })
+            match (first, last) {
+                (true, true) => {
+                    let x1 = t.first()?;
+                    let x2 = t.last()?;
+                    v = if let (Some(x1), Some(x2)) = (x1,x2) {
+                        let kd = x1.0.to_vec();
+                        if k.is_empty() {
+                            if x1.0 == x2.0 {
+                                k = kd;
+                                Some(x1.1)
+                            } else {
+                                None
+                            }
+                        } else {
+                            if kd == k && x1.0 == x2.0  {
+                                Some(x1.1)
+                            } else {
+                                None
+                            }
+                        }
+                    } else {
+                        // empty tree
+                        None
+                    };
                 }
-                (false, true) => {
-                    v = t.get_gt(&k)?.map(|(ke, va)| {
-                        k = ke.to_vec();
-                        va
-                    })
+                (true, false) | (false, true) => {
+                    let x = if first {
+                        t.first()?
+                    } else {
+                        t.last()?
+                    };
+                    v = if let Some(x) = x {  
+                        let kd = x.0.to_vec();
+                        if k.is_empty() {
+                            k = kd;
+                            Some(x.1)
+                        } else {
+                            if k == kd {
+                                Some(x.1)
+                            } else {
+                                // found, but key not matches the one specified by user
+                                None
+                            }
+                        }
+                    } else {
+                        // not found, empty tree
+                        None
+                    };
                 }
-                (true, true) => unreachable!(),
-            }
+                (false, false) => {
+                    match (lt, gt) {
+                        (false, false) => v = t.get(&k)?,
+                        (true, false) => {
+                            v = t.get_lt(&k)?.map(|(ke, va)| {
+                                k = ke.to_vec();
+                                va
+                            })
+                        }
+                        (false, true) => {
+                            v = t.get_gt(&k)?.map(|(ke, va)| {
+                                k = ke.to_vec();
+                                va
+                            })
+                        }
+                        (true, true) => unreachable!(),
+                    }
+                }
+            };
 
             if let Some(v) = v {
                 if print_key {
