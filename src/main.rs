@@ -118,6 +118,39 @@ struct Set {
     quiet: bool,
 }
 
+/// Remove specific key or range of keys
+#[derive(argh::FromArgs)]
+#[argh(subcommand, name = "rm")]
+struct Remove {
+    #[argh(positional)]
+    key: String,
+
+    /// remove range of keys (ignoring missing) up to this one
+    #[argh(option, short = 'U')]
+    end_key: Option<String>,
+
+    /// tree to use
+    #[argh(option, short = 't')]
+    tree: Option<String>,
+
+    /// inhibit hex-decoding the key
+    #[argh(switch, short = 'R')]
+    raw_key: bool,
+
+    /// inhibit hex-decoding the tree name
+    #[argh(switch, short = 'T')]
+    raw_tree_name: bool,
+
+    /// do not print `Not found` to console, just set exit code 1
+    #[argh(switch, short = 'q')]
+    quiet: bool,
+
+   /// do not remove `end_key` entry itself, only up to it. 
+   #[argh(switch, short = 'r')]
+   right_exclusive: bool,
+
+}
+
 /// Open Sled database, then wait indefinitely
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "idle")]
@@ -161,6 +194,7 @@ enum Cmd {
     Import(Import),
     Get(Get),
     Set(Set),
+    Remove(Remove),
     Noop(Noop),
     Idle(Idle),
     TreeNames(TreeNames),
@@ -408,6 +442,64 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             }
+        }
+        Cmd::Remove(Remove { key, end_key, tree, raw_key, raw_tree_name , quiet, right_exclusive}) => {
+            let mut t: &sled::Tree = &db;
+            let tree_buf;
+            if let Some(tree_name) = tree {
+                let tn = if raw_tree_name {
+                    tree_name.as_bytes().to_vec()
+                } else {
+                    hex::decode(tree_name)?
+                };
+                tree_buf = db.open_tree(tn)?;
+                t = &tree_buf;
+            }
+
+            let k = if raw_key {
+                key.as_bytes().to_vec()
+            } else {
+                hex::decode(key)?
+            };
+
+            let endkey = match end_key {
+                None => None,
+                Some(ek) => {
+                    Some(if raw_key {
+                        ek.as_bytes().to_vec()
+                    } else {
+                        hex::decode(ek)?
+                    })
+                }
+            };
+
+            if let Some(ek) = endkey {
+                let iter = if right_exclusive {
+                    t.range(k..ek)
+                } else {
+                    t.range(k..=ek)
+                };
+                let mut ctr = 0usize;
+                for x in iter {
+                    let x = x?;
+                    if t.remove(x.0)?.is_some() {
+                        ctr += 1;
+                    }
+                }
+                if !quiet {
+                    println!("{} entries removed", ctr);
+                }
+            } else {
+                if t.remove(k)?.is_some() {
+                    // OK
+                } else {
+                    if !quiet {
+                        eprintln!("Not found");
+                    }
+                    std::process::exit(1);
+                }
+            }
+
         }
         Cmd::Idle(Idle {}) => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
