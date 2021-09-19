@@ -25,22 +25,23 @@ Commands:
                     hex-encoded buffers
   import            Import entire content of the database from JSON with
                     hex-encoded buffers
-  get               Get value of specific key from the database
+  get               Get value of specific key (or first/last) from the database
   set               Set value of specific key in the database
+  rm                Remove specific key or range of keys
   nop               No operation, just open and close the database
   idle              Open Sled database, then wait indefinitely
   treenames         List tree names
   genid             Generate monotonic ID
   checksum          Call `checksum` and output the result
   sizeondisk        Call `size_on_disk` and output the result
+
 ```
 
 ```
 $ sledtool <dbname> get --help
+Usage: sledtool get <key> [-t <tree>] [-r] [-R] [-T] [-g] [-l] [-K] [-q] [-f] [-l]
 
-Usage: sledtool get <key> [-t <tree>] [-r] [-R] [-T] [-g] [-l] [-K] [-q]
-
-Get value of specific key from the database
+Get value of specific key (or first/last) from the database
 
 Options:
   -t, --tree        tree to use
@@ -52,6 +53,8 @@ Options:
   -l, --lt          use `get_lt` instead of `get`
   -K, --print-key   print key in addition to the value, with `=` sign in between
   -q, --quiet       do not print `Not found` to console, just set exit code 1
+  -f, --first       ignore key, get first record instead
+  -l, --last        ignore key, get last record instead
   --help            display usage information
 ```
 
