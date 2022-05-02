@@ -290,15 +290,11 @@ fn main() -> anyhow::Result<()> {
             if lt && gt {
                 anyhow::bail!("--gt and --lt options are specified simultaneously");
             }
-            if first && last {
-                if !quiet {
-                    eprintln!("Warning: with both --first and --last options active it would only succeed with exactly one record in the tree.");
-                }
+            if first && last && !quiet {
+                eprintln!("Warning: with both --first and --last options active it would only succeed with exactly one record in the tree.");
             }
-            if (first || last) && ! key.is_empty() {
-                if !quiet {
-                    eprintln!("Specifying non-empty (`\"\"`) key with --first or --last asserts it is indeed that key and fails otherwise.");
-                }
+            if (first || last) && ! key.is_empty() && !quiet {
+                eprintln!("Specifying non-empty (`\"\"`) key with --first or --last asserts it is indeed that key and fails otherwise.");
             }
             let mut t: &sled::Tree = &db;
             let tree_buf;
@@ -332,12 +328,10 @@ fn main() -> anyhow::Result<()> {
                             } else {
                                 None
                             }
+                        } else if kd == k && x1.0 == x2.0  {
+                            Some(x1.1)
                         } else {
-                            if kd == k && x1.0 == x2.0  {
-                                Some(x1.1)
-                            } else {
-                                None
-                            }
+                            None
                         }
                     } else {
                         // empty tree
@@ -355,13 +349,11 @@ fn main() -> anyhow::Result<()> {
                         if k.is_empty() {
                             k = kd;
                             Some(x.1)
+                        } else if k == kd {
+                            Some(x.1)
                         } else {
-                            if k == kd {
-                                Some(x.1)
-                            } else {
-                                // found, but key not matches the one specified by user
-                                None
-                            }
+                            // found, but key not matches the one specified by user
+                            None
                         }
                     } else {
                         // not found, empty tree
@@ -499,15 +491,13 @@ fn main() -> anyhow::Result<()> {
                 if !quiet {
                     println!("{} entries removed", ctr);
                 }
+            } else if t.remove(k)?.is_some() {
+                // OK
             } else {
-                if t.remove(k)?.is_some() {
-                    // OK
-                } else {
-                    if !quiet {
-                        eprintln!("Not found");
-                    }
-                    std::process::exit(1);
+                if !quiet {
+                    eprintln!("Not found");
                 }
+                std::process::exit(1);
             }
 
         }
