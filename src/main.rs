@@ -177,6 +177,9 @@ struct GenerateId {
 #[derive(argh::FromArgs)]
 #[argh(subcommand, name = "nop")]
 struct Noop {
+    /// wait to some stdin input before exiting from the program
+    #[argh(switch, short = 'w')]
+    wait: bool,
 }
 
 /// Call `checksum` and output the result
@@ -511,7 +514,11 @@ fn main() -> anyhow::Result<()> {
         Cmd::Idle(Idle {}) => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
         },
-        Cmd::Noop(Noop {}) => {}
+        Cmd::Noop(Noop {wait}) => {
+            if wait {
+                let _ = std::io::stdin().read_line(&mut String::new());
+            }
+        }
         Cmd::TreeNames(TreeNames { raw_tree_names }) => {
             for tree_name in db.tree_names() {
                 if raw_tree_names {
