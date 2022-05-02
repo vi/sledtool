@@ -14,6 +14,10 @@ struct Opts {
     #[argh(option,short='C')]
     compression_factor: Option<i32>,
 
+    /// set `cache_capacity` in `sled::Config` to the specified value
+    #[argh(option,short='P')]
+    cache_capacity: Option<u64>,
+
     /// set `create_new` in `sled::Config` to true, making it a failure to open existing database
     #[argh(switch,short='N')]
     create_new: bool,
@@ -224,6 +228,9 @@ fn main() -> anyhow::Result<()> {
     }
     if opts.throughput_mode {
         config = config.mode(sled::Mode::HighThroughput);
+    }
+    if let Some(x) = opts.cache_capacity {
+        config = config.cache_capacity(x);
     }
 
     let db: sled::Db = config.open()?;
