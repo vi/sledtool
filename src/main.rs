@@ -64,11 +64,11 @@ struct Get {
     raw_tree_name: bool,
 
     /// use `get_gt` instead of `get`
-    #[argh(switch, short = 'g')]
+    #[argh(switch)]
     gt: bool,
 
     /// use `get_lt` instead of `get`
-    #[argh(switch, short = 'l')]
+    #[argh(switch)]
     lt: bool,
 
     /// print key in addition to the value, with `=` sign in between
