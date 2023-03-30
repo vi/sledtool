@@ -39,7 +39,7 @@ Commands:
 
 ```
 $ sledtool <dbname> get --help
-Usage: sledtool get <key> [-t <tree>] [-r] [-R] [-T] [-g] [-l] [-K] [-q] [-f] [-l]
+Usage: sledtool get <key> [-t <tree>] [-r] [-R] [-T] [--gt] [--lt] [-K] [-q] [-f] [-l]
 
 Get value of specific key (or first/last) from the database
 
@@ -49,8 +49,8 @@ Options:
   -R, --raw-key     inhibit hex-decoding or hex-encoding the key
   -T, --raw-tree-name
                     inhibit hex-decoding the tree name
-  -g, --gt          use `get_gt` instead of `get`
-  -l, --lt          use `get_lt` instead of `get`
+  --gt              use `get_gt` instead of `get`
+  --lt              use `get_lt` instead of `get`
   -K, --print-key   print key in addition to the value, with `=` sign in between
   -q, --quiet       do not print `Not found` to console, just set exit code 1
   -f, --first       ignore key, get first record instead
@@ -59,7 +59,7 @@ Options:
 ```
 
 ```
-$ sledtool qqq export
+$ sledtool /path/to/db export
 {
  "5f5f736c65645f5f64656661756c74":{
   "71717132": "71776572747961736466"
